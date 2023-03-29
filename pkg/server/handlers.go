@@ -49,7 +49,7 @@ func (app *App) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	prompt := strings.TrimSpace(message.Message.ArgumentText)
 
 	// Send the prompt to OpenAI and get a response.
-	response, err := app.cfg.OpenAI.Respond(prompt, nil)
+	response, err := app.cfg.OpenAI.Respond(message.Message.Thread.Name, prompt, nil)
 	if err != nil {
 		log.Println(err)
 		response := gchat.Response{Text: "Sorry, I didn't understand your message."}

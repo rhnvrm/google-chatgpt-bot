@@ -5,7 +5,10 @@ type Event struct {
 	Message struct {
 		Text         string `json:"text"`
 		ArgumentText string `json:"argumentText"`
-	}
+		Thread       struct {
+			Name string `json:"name"`
+		}
+	} `json:"message"`
 }
 
 type Response struct {
