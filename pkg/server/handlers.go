@@ -16,16 +16,14 @@ func (app *App) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("Received request: ", r.Body)
 
-	// "Authorization"
 	bearerToken := r.Header.Get("Authorization")
-	// fmt.Println(bearerToken)
 	token := strings.Split(bearerToken, " ")
 	if len(token) != 2 || !gchat.VerifyJWT(app.cfg.BotAppID, token[1]) {
 		http.Error(w, "Unauthorized", http.StatusForbidden)
 		return
 	}
 
-	message := &gchat.DeprecatedEvent{}
+	message := &gchat.Event{}
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -33,8 +31,24 @@ func (app *App) HandleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	prompt := message.Message.Text
+	// If the bot is added to a space, respond with a welcome message.
+	if message.Type == "ADDED_TO_SPACE" {
+		response := gchat.Response{Text: "Thanks for adding me!"}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
+	// If the message type is not a message, ignore it.
+	if message.Type != "MESSAGE" {
+		response := gchat.Response{Text: "Sorry, I didn't understand your message."}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Cleanup the prompt message. Argument text has a leading space usually.
+	prompt := strings.TrimSpace(message.Message.ArgumentText)
+
+	// Send the prompt to OpenAI and get a response.
 	response, err := app.cfg.OpenAI.Respond(prompt, nil)
 	if err != nil {
 		log.Println(err)
